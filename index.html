@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AİLE OYUN GECESİ 🚀</title>
+    <!-- Konfeti ve Firebase Kütüphaneleri -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+    <style>
+        :root {
+            --bg-primary: #0f172a;
+            --bg-card: #1e293b;
+            --accent: #38bdf8;
+            --accent-green: #22c55e;
+            --accent-red: #ef4444;
+            --accent-purple: #a855f7;
+            --accent-yellow: #facc15;
+            --text: #f8fafc;
+            --text-muted: #94a3b8;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; -webkit-tap-highlight-color: transparent; }
+        body { background-color: var(--bg-primary); color: var(--text); display: flex; flex-direction: column; min-height: 100vh; align-items: center; justify-content: center; padding: 16px; overflow-x: hidden; }
+        .card { background: var(--bg-card); border: 2px solid var(--accent); border-radius: 24px; width: 100%; max-width: 480px; padding: 24px; box-shadow: 0 20px 40px rgba(56, 189, 248, 0.2); text-align: center; position: relative; }
+        
+        .alert-banner { background: linear-gradient(135deg, #ef4444, #f59e0b); padding: 12px; border-radius: 14px; font-weight: 800; font-size: 14px; text-transform: uppercase; margin-bottom: 20px; letter-spacing: 0.5px; animation: pulse 2s infinite; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.3); }
+        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.02); } }
+
+        h1 { color: var(--accent); font-size: 26px; margin-bottom: 8px; font-weight: 900; }
+        p { color: var(--text-muted); font-size: 14px; margin-bottom: 16px; }
+
+        input, textarea { width: 100%; padding: 16px; border-radius: 14px; border: 1px solid #334155; background: #0f172a; color: #fff; font-size: 16px; margin-top: 10px; outline: none; transition: 0.2s; }
+        input:focus { border-color: var(--accent); box-shadow: 0 0 10px rgba(56, 189, 248, 0.3); }
+
+        button { width: 100%; padding: 16px; border-radius: 14px; border: none; font-size: 16px; font-weight: 800; cursor: pointer; margin-top: 12px; transition: transform 0.1s, background 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; text-transform: uppercase; }
+        button:active { transform: scale(0.97); }
+        .btn-accent { background: var(--accent); color: #0f172a; box-shadow: 0 4px 15px rgba(56, 189, 248, 0.4); }
+        .btn-green { background: var(--accent-green); color: #fff; box-shadow: 0 4px 15px rgba(34, 197, 94, 0.4); }
+        .btn-wa { background: #25D366; color: #fff; box-shadow: 0 4px 15px rgba(37, 211, 102, 0.4); text-decoration: none; border-radius: 14px; padding: 16px; font-weight: 800; font-size: 15px; margin-top: 12px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+
+        .timer-box { font-size: 48px; font-weight: 900; color: var(--accent-yellow); margin: 10px 0; text-shadow: 0 0 15px rgba(250, 204, 21, 0.4); }
+        .question-box { background: #0f172a; border-left: 5px solid var(--accent-purple); padding: 16px; border-radius: 12px; font-size: 18px; font-weight: 700; margin: 16px 0; text-align: left; line-height: 1.4; }
+        
+        .answer-card { background: #0f172a; border: 1px solid #334155; padding: 14px; border-radius: 14px; margin-top: 10px; text-align: left; display: flex; justify-content: space-between; align-items: center; }
+        .badge { padding: 4px 8px; border-radius: 8px; font-size: 11px; font-weight: 800; text-transform: uppercase; }
+        .badge-slow { background: var(--accent-red); color: #fff; animation: blink 1s infinite; }
+        .badge-fast { background: var(--accent-green); color: #fff; }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
+
+        .player-badge { display: inline-flex; align-items: center; gap: 6px; background: #0f172a; padding: 8px 14px; border-radius: 20px; font-size: 13px; font-weight: 600; margin: 4px; border: 1px solid #334155; }
+        .vote-btn { background: #334155; color: #fff; width: auto; padding: 6px 12px; margin: 0; font-size: 12px; border-radius: 8px; }
+
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <!-- EKRAN 1: GİRİŞ EKRANI -->
+        <div id="screen-welcome">
+            <div class="alert-banner">🚨 TELEFONDAN HERKES BU OYUNU OYNAYACAK! 🚀</div>
+            <h1>AİLE OYUN GECESİ</h1>
+            <p>Ailenin en eğlenceli ve hızlı oyuncusu kim olacak?</p>
+            
+            <input type="text" id="player-name" placeholder="Adınızı Yazın (Örn: Ahmet, Anne, Dayı)...">
+            <button class="btn-accent" onclick="joinGame()">OYUNA KATIL 👉</button>
+
+            <a id="wa-share-btn" href="#" class="btn-wa" onclick="shareToWhatsApp()">
+                📲 WhatsApp Aile Grubuna Link At
+            </a>
+        </div>
+
+        <!-- EKRAN 2: LOBİ -->
+        <div id="screen-lobby" class="hidden">
+            <h1>🎮 LOBİ</h1>
+            <p>Grubun katılması bekleniyor. Herkes bağlandığında başlatın!</p>
+            <div id="lobby-players" style="margin: 15px 0;"></div>
+            <button class="btn-green" onclick="startRound()">YARIŞMAYI BAŞLAT 🚀</button>
+        </div>
+
+        <!-- EKRAN 3: SORU & ZAMANLAYICI (10 SN) -->
+        <div id="screen-game" class="hidden">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <span id="round-tag" style="color:var(--accent); font-weight:800; font-size:13px;">TUR 1 / 6</span>
+                <span id="cat-tag" style="background:var(--accent-purple); color:#fff; font-size:11px; padding:4px 10px; border-radius:8px; font-weight:800;">AİLE SIRLARI</span>
+            </div>
+
+            <div class="timer-box" id="timer-display">10</div>
+            <div class="question-box" id="question-text">Soru Yükleniyor...</div>
+
+            <input type="text" id="answer-input" placeholder="Cevabınızı hızlıca buraya yazın...">
+            <button class="btn-accent" id="btn-submit" onclick="submitAnswer()">CEVABI GÖNDER 🚀</button>
+        </div>
+
+        <!-- EKRAN 4: CEVAPLAR & YAVAŞ KALAN TESPİTİ -->
+        <div id="screen-results" class="hidden">
+            <h1>📊 TUR SONUÇLARI</h1>
+            <div class="question-box" id="res-q-text" style="font-size:14px; color:var(--text-muted); margin: 10px 0;"></div>
+
+            <div id="answers-list"></div>
+
+            <button class="btn-accent" style="margin-top:20px;" onclick="nextQuestion()">SONRAKİ SORU ➡️</button>
+        </div>
+
+        <!-- EKRAN 5: İSTATİSTİKLER & ÖDÜLLER -->
+        <div id="screen-end" class="hidden">
+            <h1>🏆 OYUN BİTTİ!</h1>
+            <p>Gecenin kazananları ve istatistikleri:</p>
+            
+            <div id="final-stats"></div>
+
+            <button class="btn-accent" style="margin-top:20px;" onclick="location.reload()">YENİDEN OYNA 🔄</button>
+            <button class="btn-wa" onclick="shareFinalStats()">📲 İstatistikleri Aile Grubuna At</button>
+        </div>
+    </div>
+
+    <script>
+        const questions = [
+            { cat: "KİM YAPAR?", q: "Aramızda zombi istilası çıksa ilk kim elenir?" },
+            { cat: "AİLE SIRLARI", q: "Grubumuzda telefona en çok bakan kim?" },
+            { cat: "KELİME BOMBASI", q: "'A' harfiyle başlayan en komik yemeği yazın!" },
+            { cat: "KİM YAPAR?", q: "Yanlışlıkla polisle başı derde girebilecek ilk kişi kim?" },
+            { cat: "DOĞRULUK", q: "Aramızdaki en unutkan kişi kim?" },
+            { cat: "AİLE SIRLARI", q: "Gizlice en çok alışveriş yapan aile ferdi kim?" }
+        ];
+
+        let players = [];
+        let currentPlayer = "";
+        let currentRound = 0;
+        let timerInterval = null;
+        let timeLeft = 10;
+        let currentAnswers = [];
+        let scores = {};
+
+        function joinGame() {
+            const nameInput = document.getElementById('player-name').value.trim();
+            if (!nameInput) return alert("Lütfen adınızı yazın!");
+            currentPlayer = nameInput;
+            
+            if (!players.includes(currentPlayer)) {
+                players.push(currentPlayer);
+                scores[currentPlayer] = 0;
+            }
+
+            document.getElementById('screen-welcome').classList.add('hidden');
+            document.getElementById('screen-lobby').classList.remove('hidden');
+            renderLobby();
+        }
+
+        function renderLobby() {
+            const container = document.getElementById('lobby-players');
+            container.innerHTML = players.map(p => `<span class="player-badge">👤 ${p}</span>`).join('');
+        }
+
+        function startRound() {
+            if (currentRound >= questions.length) {
+                showEndScreen();
+                return;
+            }
+            currentAnswers = [];
+            document.getElementById('screen-lobby').classList.add('hidden');
+            document.getElementById('screen-results').classList.add('hidden');
+            document.getElementById('screen-game').classList.remove('hidden');
+
+            const q = questions[currentRound];
+            document.getElementById('round-tag').innerText = `TUR ${currentRound + 1} / ${questions.length}`;
+            document.getElementById('cat-tag').innerText = q.cat;
+            document.getElementById('question-text').innerText = q.q;
+            document.getElementById('answer-input').value = "";
+            document.getElementById('answer-input').disabled = false;
+            document.getElementById('btn-submit').disabled = false;
+
+            startTimer();
+        }
+
+        function startTimer() {
+            timeLeft = 10;
+            document.getElementById('timer-display').innerText = timeLeft;
+            clearInterval(timerInterval);
+
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                document.getElementById('timer-display').innerText = timeLeft;
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    submitAnswer();
+                }
+            }, 1000);
+        }
+
+        function submitAnswer() {
+            clearInterval(timerInterval);
+            const ansText = document.getElementById('answer-input').value.trim() || "Cevap Verilmedi 🤐";
+            const duration = 10 - timeLeft;
+
+            currentAnswers.push({ name: currentPlayer, text: ansText, time: duration, likes: 0 });
+            document.getElementById('answer-input').disabled = true;
+            document.getElementById('btn-submit').disabled = true;
+
+            // Simüle edilen oyuncular (Test için)
+            players.forEach(p => {
+                if (p !== currentPlayer) {
+                    currentAnswers.push({
+                        name: p,
+                        text: "Görüş Bildirildi 👍",
+                        time: Math.floor(Math.random() * 7) + 3,
+                        likes: 0
+                    });
+                }
+            });
+
+            showResults();
+        }
+
+        function showResults() {
+            confetti({ particleCount: 40, spread: 60 });
+            document.getElementById('screen-game').classList.add('hidden');
+            document.getElementById('screen-results').classList.remove('hidden');
+            document.getElementById('res-q-text').innerText = questions[currentRound].q;
+
+            // En yavaş cevap vereni bul
+            currentAnswers.sort((a, b) => b.time - a.time);
+            const slowestPlayer = currentAnswers[0];
+
+            const listContainer = document.getElementById('answers-list');
+            listContainer.innerHTML = currentAnswers.map(ans => {
+                const isSlow = ans === slowestPlayer && currentAnswers.length > 1;
+                return `
+                    <div class="answer-card">
+                        <div>
+                            <strong style="color:var(--accent);">${ans.name}:</strong> ${ans.text}
+                        </div>
+                        <div>
+                            ${isSlow ? '<span class="badge badge-slow">🐢 SONUNDA YAZDIN!</span>' : '<span class="badge badge-fast">⚡ ' + ans.time + 's</span>'}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function nextQuestion() {
+            currentRound++;
+            if (currentRound < questions.length) {
+                startRound();
+            } else {
+                showEndScreen();
+            }
+        }
+
+        function showEndScreen() {
+            document.getElementById('screen-results').classList.add('hidden');
+            document.getElementById('screen-end').classList.remove('hidden');
+
+            document.getElementById('final-stats').innerHTML = `
+                <div class="answer-card">🏆 <strong>Ailenin Şampiyonu:</strong> ${currentPlayer}</div>
+                <div class="answer-card">🐢 <strong>Sonunda Yazdın Rozeti:</strong> Gecenin En Yavaşı</div>
+                <div class="answer-card">⚡ <strong>Rüzgar Gibi Hızlı:</strong> ${currentPlayer}</div>
+            `;
+            confetti({ particleCount: 150, spread: 90 });
+        }
+
+        function shareToWhatsApp() {
+            const pageUrl = window.location.href;
+            const text = encodeURIComponent(`🚨 TELEFONDAN HERKES BU OYUNU OYNAYACAK! 🚀\n\nLinke tıkla ve aile oyun gecesine katıl:\n${pageUrl}`);
+            window.open(`https://api.whatsapp.com/send?text=${text}`, '_blank');
+        }
+
+        function shareFinalStats() {
+            const text = encodeURIComponent(`🎉 AİLE OYUN GECESİ SONUÇLARI 🎉\n\n🏆 Şampiyon: ${currentPlayer}\n🐢 En Yavaş Yazan: Sonunda Yazdın Rozeti Sahibi!\n\nHarika bir oyundu! 🚀`);
+            window.open(`https://api.whatsapp.com/send?text=${text}`, '_blank');
+        }
+    </script>
+</body>
+</html>
